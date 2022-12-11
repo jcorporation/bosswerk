@@ -9,6 +9,7 @@ WWW="$BASE_DIR/www"                    # doc root
 DATA_FILE="$WWW/data/data.js"          # the javascript file with current data
 GRAPH_DIR="$WWW/graphs"                # dir for the rrd graphs
 RRD="$BASE_DIR/rrd/solar.rrd"          # the rrd data file
+
 # rrd options
 RRD_OPTS="--imgformat SVG -w 800 -h 300 -u 600 -l 0"
 RRD_OPTS="$RRD_OPTS --full-size-mode -g"
@@ -19,7 +20,7 @@ RRD_OPTS="$RRD_OPTS AREA:watts_max#7eca90:Max"
 RRD_OPTS="$RRD_OPTS AREA:watts_avg#28a745:Watt"
 RRD_OPTS="$RRD_OPTS LINE:watts_max#ffffff:Min"
 
-#goto script dir
+# goto script dir
 cd "$BASE_DIR" || exit 1
 
 source .config
@@ -70,9 +71,10 @@ do
 done
 
 # update graphs
-if [ "$RRD" -nt "$GRAPH_DIR/last_8h.svg" ]
+if [ ! -f "$GRAPH_DIR/last_8h.svg" ] ||
+   [ "$RRD" -nt "$GRAPH_DIR/last_8h.svg" ]
 then
-  #update graph in cronjob interval (5 min)
+  # update graph in cronjob interval (5 min)
   rrdtool graph "$GRAPH_DIR/last_8h.svg" \
   	-t "Last 8 hours" --end now --start end-8h \
 	$RRD_OPTS
@@ -81,8 +83,9 @@ then
   	-t "Last day" --end now --start end-1d \
 	$RRD_OPTS
 
-  #update other graphs hourly
-  if [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_month.svg") ))" -gt "7200" ]
+  # update other graphs hourly
+  if [ ! -f "$GRAPH_DIR/last_month.svg" ] ||
+     [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_month.svg") ))" -gt "7200" ]
   then
     rrdtool graph "$GRAPH_DIR/last_month.svg" \
   	-t "Last month" --end now --start end-5w \
