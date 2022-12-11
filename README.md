@@ -1,11 +1,12 @@
-This is my small framework to fetch, store and display data from my bosswerk inverter.
+This is my small framework to fetch, store and display data from my Bosswerk inverter.
 
-- fetches current power from a bosswerk inverter
-- saves data in a rrd file
-- displays data via html
+- Fetches current power from a Bosswerk inverter
+- Saves the current power in a rrd file
+- Displays current and historical data via html
 
 ## Dependencies
 
+- bash
 - curl
 - rrdtool
 
