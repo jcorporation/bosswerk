@@ -16,7 +16,6 @@ Do not run this script as root, create a separate user for it.
 ```
 useradd -m solar
 sudo -i -u solar
-
 ```
 
 ### Clone the repo
