@@ -1,0 +1,7 @@
+.config
+.netrc
+*~
+rrd/*.rrd
+www/data/*.js
+www/data/*.json
+www/graphs/*.svg

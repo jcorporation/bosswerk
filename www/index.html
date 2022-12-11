@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <title>Solar</title>
+    <link rel="stylesheet" href="bootstrap.css"/>
+    <link rel="stylesheet" href="solar.css"/>
+    <meta http-equiv="refresh" content="60"/>
+  </head>
+  <body>
+    <main class="container py-3">
+    <h1>Solar</h1>
+    <table class="table">
+      <tbody>
+        <tr><th>Refreshed</th><td id="last_refresh"></td>
+        <tr><th>Current</th><td id="webdata_now_p"></td>
+        <tr><th>Yield today</th><td id="webdata_today_e"></td>
+        <tr><th>Total yield</th><td id="webdata_total_e"></td>
+      </tbody>
+    </table>
+    <img src="graphs/last_8h.svg"/>
+    <img src="graphs/last_day.svg"/>
+    <img src="graphs/last_month.svg"/>
+    <img src="graphs/last_year.svg"/>
+    </main>
+    <script src="data/data.js"></script>
+    <script src="solar.js"></script>
+  </body>
+</html>

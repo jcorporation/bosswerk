@@ -1,0 +1,10 @@
+main {
+    max-width: 800px !important;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin-bottom: 1rem;
+}
