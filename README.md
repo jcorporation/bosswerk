@@ -45,7 +45,7 @@ EOL
 
 ### Add a crontab entry
 
-Run the script only at daytime.
+Run the script only at daytime every 5 minutes. The rrdfile expects one datapoint each 5 minutes.
 
 ```
 */5 6-20 * * *	/home/solar/bosswerk/solar.sh 2>&1 | logger -p local1.info

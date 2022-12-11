@@ -1,98 +1,122 @@
 #!/bin/bash
 
+# strict mode
+set -euo pipefail
+
 #SPDX-License-Identifier: GPL-3.0-or-later
 #myMPD (c) 2022 Juergen Mang <mail@jcgames.de>
 #https://github.com/jcorporation
 
-BASE_DIR=$(dirname "$(realpath "$0")") # path of the script
-WWW="$BASE_DIR/www"                    # doc root
-DATA_FILE="$WWW/data/data.js"          # the javascript file with current data
-GRAPH_DIR="$WWW/graphs"                # dir for the rrd graphs
-RRD="$BASE_DIR/rrd/solar.rrd"          # the rrd data file
+BASE_DIR=$(dirname "$(realpath "$0")")     # path of the script
+WWW_DIR="$BASE_DIR/www"                    # doc root
+GRAPH_DIR="$WWW_DIR/graphs"                # dir for the rrd graphs
+DATA_FILE="$WWW_DIR/data/data.js"          # the javascript file with current data
+RRD_FILE="$BASE_DIR/rrd/solar.rrd"         # the rrd data file
 
 # rrd options
 RRD_OPTS="--imgformat SVG -w 800 -h 300 -u 600 -l 0"
 RRD_OPTS="$RRD_OPTS --full-size-mode -g"
-RRD_OPTS="$RRD_OPTS DEF:watts_avg=$RRD:watts:AVERAGE"
-RRD_OPTS="$RRD_OPTS DEF:watts_min=$RRD:watts:MIN"
-RRD_OPTS="$RRD_OPTS DEF:watts_max=$RRD:watts:MAX"
-RRD_OPTS="$RRD_OPTS AREA:watts_max#7eca90:Max"
-RRD_OPTS="$RRD_OPTS AREA:watts_avg#28a745:Watt"
-RRD_OPTS="$RRD_OPTS LINE:watts_min#ffffff:Min"
+RRD_OPTS="$RRD_OPTS DEF:watts_avg=$RRD_FILE:watts:AVERAGE"
+RRD_OPTS="$RRD_OPTS DEF:watts_min=$RRD_FILE:watts:MIN"
+RRD_OPTS="$RRD_OPTS DEF:watts_max=$RRD_FILE:watts:MAX"
+
+# for exact graphs (max = min = avg)
+RRD_OPTS_EXACT="$RRD_OPTS AREA:watts_max#7eca90:Max"
+RRD_OPTS_EXACT="$RRD_OPTS_EXACT LINE2:watts_avg#28a745:Watt"
+
+# for more fuzzy graphs
+RRD_OPTS_FUZZY="$RRD_OPTS AREA:watts_max#7eca90:Max"
+RRD_OPTS_FUZZY="$RRD_OPTS_FUZZY AREA:watts_min#ffffff:Min"
+RRD_OPTS_FUZZY="$RRD_OPTS_FUZZY LINE2:watts_avg#28a745:Watt"
 
 # goto script dir
 cd "$BASE_DIR" || exit 1
 
 source .config
 
-if [ -z "$PV_URI" ]
+if [ -z "${PV_URI+x}" ]
 then
   echo "PV_URI not defined"
   exit 1
 fi
 
-if [ ! -f "$RRD" ]
+if [ ! -f "$RRD_FILE" ]
 then
   # creates the rrd with:
   # - 5 min data steps
-  # - 1 week: 5 min
-  # - 1 year: 15 min
-  # - 20 year: 1 hour
-  rrdtool create "$RRD" --start now-2h --step 300 \
-	DS:watts:GAUGE:600:0:700 \
-	RRA:AVERAGE:0:1:2016 \
-	RRA:AVERAGE:0:3:35712 \
-	RRA:AVERAGE:0:12:175680 \
-	RRA:MIN:0:1:2016 \
-	RRA:MIN:0:3:35712 \
-	RRA:MIN:0:12:175680 \
-	RRA:MAX:0:1:2016 \
-	RRA:MAX:0:3:35712 \
-	RRA:MAX:0:12:175680
+  # - 8 days: 5 min
+  # - 397 days: 15 min
+  # - 7320 days (20 years): 1 hour
+  rrdtool create "$RRD_FILE" --start now-2h --step 300 \
+    DS:watts:GAUGE:600:0:700 \
+    RRA:AVERAGE:0:1:2304 \
+    RRA:AVERAGE:0:3:38112 \
+    RRA:AVERAGE:0:12:175680 \
+    RRA:MIN:0:1:2304 \
+    RRA:MIN:0:3:38112 \
+    RRA:MIN:0:12:175680 \
+    RRA:MAX:0:1:2304 \
+    RRA:MAX:0:3:38112 \
+    RRA:MAX:0:12:175680
 fi
 
 # try to fetch the data from pv
+STATUS="FAIL"
 for TRY in {1..10}
 do
-  echo "Fetching data from pv (#$TRY)"
-  if OUT=$(curl -s -n "$PV_URI" 2>&1 | grep "^var webdata")
+  echo "Fetching data from inverter $PV_URI (#$TRY)"
+  if OUT=$(curl -s -S -n "$PV_URI" | grep "^var webdata")
   then
     WATT=$(grep webdata_now_p <<< "$OUT" | cut -d\" -f2)
     if [ -n "$WATT" ]
     then
-      # updat the rrd and write the js data file
+      # update the rrd and write the js data file
       echo "$OUT" > "$DATA_FILE"
       echo "var last_refresh=$(date +%s)" >> "$DATA_FILE"
-      rrdtool update "$RRD" "N:$WATT"
+      rrdtool update "$RRD_FILE" "N:$WATT"
+      STATUS="OK"
       break
     fi
   fi
-  sleep 10
+  RETRY=$(( 3*TRY ))
+  echo "Error, retrying in ${RETRY}s"
+  sleep "$RETRY"
 done
 
-# update graphs
-if [ ! -f "$GRAPH_DIR/last_8h.svg" ] ||
-   [ "$RRD" -nt "$GRAPH_DIR/last_8h.svg" ]
+if [ "$STATUS" = "FAIL" ]
 then
-  # update graph in cronjob interval (5 min)
-  rrdtool graph "$GRAPH_DIR/last_8h.svg" \
-  	-t "Last 8 hours" --end now --start end-8h \
-	$RRD_OPTS
-	
-  rrdtool graph "$GRAPH_DIR/last_day.svg" \
-  	-t "Last day" --end now --start end-1d \
-	$RRD_OPTS
-
-  # update other graphs hourly
-  if [ ! -f "$GRAPH_DIR/last_month.svg" ] ||
-     [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_month.svg") ))" -gt "7200" ]
-  then
-    rrdtool graph "$GRAPH_DIR/last_month.svg" \
-  	-t "Last month" --end now --start end-5w \
-	$RRD_OPTS
-
-    rrdtool graph "$GRAPH_DIR/last_year.svg" \
-  	-t "Last year" --end now --start end-53w \
-	$RRD_OPTS
-  fi
+  echo "Error fetching data from inverter"
+  exit 1
 fi
+
+# update graph in cronjob interval
+rrdtool graph "$GRAPH_DIR/last_8h.svg" \
+  -t "Last 8 hours" --end now --start end-8h \
+  $RRD_OPTS_EXACT > /dev/null
+
+rrdtool graph "$GRAPH_DIR/last_day.svg" \
+  -t "Last day" --end now --start end-1d \
+  $RRD_OPTS_EXACT > /dev/null
+
+# update other graphs hourly
+if [ ! -f "$GRAPH_DIR/last_week.svg" ] ||
+   [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_week.svg") ))" -gt "3600" ]
+then
+  rrdtool graph "$GRAPH_DIR/last_week.svg" \
+    -t "Last week" --end now --start end-7d \
+    $RRD_OPTS_EXACT > /dev/null
+
+  rrdtool graph "$GRAPH_DIR/last_month.svg" \
+    -t "Last month" --end now --start end-31d \
+    $RRD_OPTS_FUZZY > /dev/null
+
+  rrdtool graph "$GRAPH_DIR/last_3months.svg" \
+    -t "Last 3 months" --end now --start end-93d \
+    $RRD_OPTS_FUZZY > /dev/null
+
+  rrdtool graph "$GRAPH_DIR/last_year.svg" \
+    -t "Last year" --end now --start end-366d \
+    $RRD_OPTS_FUZZY > /dev/null
+fi
+
+exit 0
