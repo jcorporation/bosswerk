@@ -18,7 +18,7 @@ RRD_OPTS="$RRD_OPTS DEF:watts_min=$RRD:watts:MIN"
 RRD_OPTS="$RRD_OPTS DEF:watts_max=$RRD:watts:MAX"
 RRD_OPTS="$RRD_OPTS AREA:watts_max#7eca90:Max"
 RRD_OPTS="$RRD_OPTS AREA:watts_avg#28a745:Watt"
-RRD_OPTS="$RRD_OPTS LINE:watts_max#ffffff:Min"
+RRD_OPTS="$RRD_OPTS LINE:watts_min#ffffff:Min"
 
 # goto script dir
 cd "$BASE_DIR" || exit 1
