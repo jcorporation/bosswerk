@@ -1,21 +1,24 @@
 #!/bin/bash
 
+# SPDX-License-Identifier: GPL-3.0-or-later
+# myMPD (c) 2022 Juergen Mang <mail@jcgames.de>
+# https://github.com/jcorporation
+
 # strict mode
 set -euo pipefail
-
-#SPDX-License-Identifier: GPL-3.0-or-later
-#myMPD (c) 2022 Juergen Mang <mail@jcgames.de>
-#https://github.com/jcorporation
 
 BASE_DIR=$(dirname "$(realpath "$0")")     # path of the script
 WWW_DIR="$BASE_DIR/www"                    # doc root
 GRAPH_DIR="$WWW_DIR/graphs"                # dir for the rrd graphs
-DATA_FILE="$WWW_DIR/data/data.js"          # the javascript file with current data
+JSON_FILE="$WWW_DIR/data/data.json"        # the json file with current data
 RRD_FILE="$BASE_DIR/rrd/solar.rrd"         # the rrd data file
 
 # rrd options
-RRD_OPTS="--imgformat SVG -w 800 -h 300 -u 600 -l 0"
-RRD_OPTS="$RRD_OPTS --full-size-mode -g"
+RRD_OPTS="--imgformat SVG -w 800 -h 300 -l 0 -u 600 --slope-mode"
+RRD_OPTS="$RRD_OPTS --full-size-mode -g --border 0"
+RRD_OPTS="$RRD_OPTS -c BACK#1d2124 -c FONT#f8f9fa"
+RRD_OPTS="$RRD_OPTS -c CANVAS#212529 -c MGRID#f8f9fa -c GRID#6c757d -c ARROW#6c757d"
+RRD_OPTS="$RRD_OPTS -n TITLE:12:. -n AXIS:8.5:. -n UNIT:8.5:."
 RRD_OPTS="$RRD_OPTS DEF:watts_avg=$RRD_FILE:watts:AVERAGE"
 RRD_OPTS="$RRD_OPTS DEF:watts_min=$RRD_FILE:watts:MIN"
 RRD_OPTS="$RRD_OPTS DEF:watts_max=$RRD_FILE:watts:MAX"
@@ -26,20 +29,23 @@ RRD_OPTS_EXACT="$RRD_OPTS_EXACT LINE2:watts_avg#28a745:Watt"
 
 # for more fuzzy graphs
 RRD_OPTS_FUZZY="$RRD_OPTS AREA:watts_max#7eca90:Max"
-RRD_OPTS_FUZZY="$RRD_OPTS_FUZZY AREA:watts_min#ffffff:Min"
+RRD_OPTS_FUZZY="$RRD_OPTS_FUZZY AREA:watts_min#212529:Min"
 RRD_OPTS_FUZZY="$RRD_OPTS_FUZZY LINE2:watts_avg#28a745:Watt"
 
 # goto script dir
 cd "$BASE_DIR" || exit 1
 
+# get config
 source .config
 
+# check for PV_URI
 if [ -z "${PV_URI+x}" ]
 then
   echo "PV_URI not defined"
   exit 1
 fi
 
+# check for rrd file
 if [ ! -f "$RRD_FILE" ]
 then
   # creates the rrd with:
@@ -70,9 +76,11 @@ do
     WATT=$(grep webdata_now_p <<< "$OUT" | cut -d\" -f2)
     if [ -n "$WATT" ]
     then
-      # update the rrd and write the js data file
-      echo "$OUT" > "$DATA_FILE"
-      echo "var last_refresh=$(date +%s)" >> "$DATA_FILE"
+      # write the json data
+      printf "{\n" > "$JSON_FILE"
+      sed -E 's/var (webdata_.+) = "(.*)";/\t"\1": "\2",/' <<< "$OUT" >> "$JSON_FILE"
+      printf "\t\"last_refresh\": %s\n}\n" "$(date +%s)" >> "$JSON_FILE"
+      # update the rrd
       rrdtool update "$RRD_FILE" "N:$WATT"
       STATUS="OK"
       break
@@ -91,11 +99,11 @@ fi
 
 # update graph in cronjob interval
 rrdtool graph "$GRAPH_DIR/last_8h.svg" \
-  -t "Last 8 hours" --end now --start end-8h \
+  -t "Last 8 hours\n\n" --end now --start end-8h \
   $RRD_OPTS_EXACT > /dev/null
 
 rrdtool graph "$GRAPH_DIR/last_day.svg" \
-  -t "Last day" --end now --start end-1d \
+  -t "Last day\n\n" --end now --start end-1d \
   $RRD_OPTS_EXACT > /dev/null
 
 # update other graphs hourly
@@ -103,19 +111,19 @@ if [ ! -f "$GRAPH_DIR/last_week.svg" ] ||
    [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_week.svg") ))" -gt "3600" ]
 then
   rrdtool graph "$GRAPH_DIR/last_week.svg" \
-    -t "Last week" --end now --start end-7d \
+    -t "Last week\n\n" --end now --start end-7d \
     $RRD_OPTS_EXACT > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_month.svg" \
-    -t "Last month" --end now --start end-31d \
+    -t "Last month\n\n" --end now --start end-31d \
     $RRD_OPTS_FUZZY > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_3months.svg" \
-    -t "Last 3 months" --end now --start end-93d \
+    -t "Last 3 months\n\n" --end now --start end-93d \
     $RRD_OPTS_FUZZY > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_year.svg" \
-    -t "Last year" --end now --start end-366d \
+    -t "Last year\n\n" --end now --start end-366d \
     $RRD_OPTS_FUZZY > /dev/null
 fi
 

@@ -1,8 +1,13 @@
 This is my small framework to fetch, store and display data from my Bosswerk inverter.
 
-- Fetches current power from a Bosswerk inverter
-- Saves the current power in a rrd file
-- Displays current and historical data via html
+![image](screenshot.png)
+
+## How it works
+
+1. The script fetches the `status.html` from the inverter and converts the inline JavaScript variables to JSON.
+3. The current power value is written into a rrd for graphing purposes.
+4. The script generates svg graphs for different timespans.
+5. The `www` subdirectory can be published to access the index page with current and historical data.
 
 ## Dependencies
 
@@ -12,27 +17,27 @@ This is my small framework to fetch, store and display data from my Bosswerk inv
 
 ## Usage
 
-Do not run this script as root, create a separate user for it.
+### 1. Do not run this script as root, create a separate user for it.
 
 ```
 useradd -m solar
 sudo -i -u solar
 ```
 
-### Clone the repo
+### 2. Clone the repo
 
 ```
 git clone https://github.com/jcorporation/bosswerk.git
 ```
 
-### Add the http uri to fetch data from
+### 3. Add the http uri to fetch data from
 
 ```
 cd bosswerk
 echo "PV_URI=\"http://10.10.100.254/status.html\"" > .config
 ```
 
-### Add a .netrc file for authentication (user home)
+### 4. Add a .netrc file for authentication (user home)
 
 ```
 cat > ~/.netrc << EOL
@@ -43,7 +48,19 @@ password admin
 EOL
 ```
 
-### Add a crontab entry
+### 5. Test the script
+
+```
+./solar.sh
+```
+
+After the first run, there should be following new files:
+
+- `rrd/solar.rrd`: the rrd file with historical data
+- `www/data/data.json`: the json data file
+- `www/graphs/last_*.svg`: the svg graphs of historical data
+
+### 6. Add a crontab entry
 
 Run the script only at daytime every 5 minutes. The rrdfile expects one datapoint each 5 minutes.
 
@@ -51,7 +68,7 @@ Run the script only at daytime every 5 minutes. The rrdfile expects one datapoin
 */5 6-20 * * *	/home/solar/bosswerk/solar.sh 2>&1 | logger -p local1.info
 ```
 
-### Publish
+### 7. Publish
 
 Publish the `www` directory via nginx:
 
@@ -59,5 +76,4 @@ Publish the `www` directory via nginx:
 location /bosswerk {
   alias /home/solar/bosswerk/www;
 }
-
 ```

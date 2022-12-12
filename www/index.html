@@ -2,30 +2,28 @@
 <html lang="en">
   <head>
     <title>Solar</title>
-    <link rel="stylesheet" href="bootstrap.css"/>
-    <link rel="stylesheet" href="solar.css"/>
-    <link rel="icon" href="favicon.png"/>
-    <meta http-equiv="refresh" content="60"/>
+    <link rel="stylesheet" href="assets/bootstrap.css"/>
+    <link rel="stylesheet" href="assets/solar.css"/>
+    <link rel="icon" href="assets/favicon.png"/>
   </head>
   <body>
     <main class="container py-3">
-    <h1>Solar</h1>
-    <table class="table">
-      <tbody>
-        <tr><th>Refreshed</th><td id="last_refresh"></td>
-        <tr><th>Current</th><td id="webdata_now_p"></td>
-        <tr><th>Yield today</th><td id="webdata_today_e"></td>
-        <tr><th>Total yield</th><td id="webdata_total_e"></td>
-      </tbody>
-    </table>
-    <img src="graphs/last_8h.svg"/>
-    <img src="graphs/last_day.svg"/>
-    <img src="graphs/last_week.svg"/>
-    <img src="graphs/last_month.svg"/>
-    <img src="graphs/last_3months.svg"/>
-    <img src="graphs/last_year.svg"/>
+      <h1>Solar</h1>
+      <table class="table">
+        <tbody>
+          <tr><th>Refreshed</th><td id="last_refresh"></td>
+          <tr><th>Current</th><td id="webdata_now_p"></td>
+          <tr><th>Yield today</th><td id="webdata_today_e"></td>
+          <tr><th>Total yield</th><td id="webdata_total_e"></td>
+        </tbody>
+      </table>
+      <img data-src="graphs/last_8h.svg"/>
+      <img data-src="graphs/last_day.svg"/>
+      <img data-src="graphs/last_week.svg"/>
+      <img data-src="graphs/last_month.svg"/>
+      <img data-src="graphs/last_3months.svg"/>
+      <img data-src="graphs/last_year.svg"/>
     </main>
-    <script src="data/data.js"></script>
-    <script src="solar.js"></script>
+    <script src="assets/solar.js"></script>
   </body>
 </html>
