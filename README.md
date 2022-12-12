@@ -1,4 +1,8 @@
-This is my small framework to fetch, store and display data from my Bosswerk inverter.
+# Bosswerk Inverter Statistics
+
+This is my small framework to fetch, store and display data from my Bosswerk inverter without a connection to the cloud.
+
+This framework works in my home setup with a Bosswerk MI-600.
 
 ![image](screenshot.png)
 
