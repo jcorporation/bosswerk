@@ -23,6 +23,7 @@ function parseData(data) {
     document.getElementById('webdata_now_p').textContent = data.webdata_now_p + 'W';
     document.getElementById('webdata_today_e').textContent = data.webdata_today_e + 'kWh';
     document.getElementById('webdata_total_e').textContent = data.webdata_total_e + 'kWh';
+    document.title = 'Solar: ' + data.webdata_now_p + 'W';
     for (const img of imgs) {
         img.src = img.getAttribute('data-src') + '?' + last_refresh;
     }
