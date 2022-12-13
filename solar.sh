@@ -97,13 +97,13 @@ then
   exit 1
 fi
 
-# update graph in cronjob interval
+# update graphs in cronjob interval
 rrdtool graph "$GRAPH_DIR/last_8h.svg" \
   -t "Last 8 hours\n\n" --end now --start end-8h \
   $RRD_OPTS_EXACT > /dev/null
 
 rrdtool graph "$GRAPH_DIR/last_day.svg" \
-  -t "Last day\n\n" --end now --start end-1d \
+  -t "Last day\n\n" --end now --start end-26h \
   $RRD_OPTS_EXACT > /dev/null
 
 # update other graphs hourly
@@ -111,11 +111,11 @@ if [ ! -f "$GRAPH_DIR/last_week.svg" ] ||
    [ "$(( $(date +"%s") - $(stat -c "%Y" "$GRAPH_DIR/last_week.svg") ))" -gt "3600" ]
 then
   rrdtool graph "$GRAPH_DIR/last_week.svg" \
-    -t "Last week\n\n" --end now --start end-7d \
+    -t "Last week\n\n" --end now --start end-8d \
     $RRD_OPTS_EXACT > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_month.svg" \
-    -t "Last month\n\n" --end now --start end-31d \
+    -t "Last month\n\n" --end now --start end-32d \
     $RRD_OPTS_FUZZY > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_3months.svg" \
@@ -123,7 +123,7 @@ then
     $RRD_OPTS_FUZZY > /dev/null
 
   rrdtool graph "$GRAPH_DIR/last_year.svg" \
-    -t "Last year\n\n" --end now --start end-366d \
+    -t "Last year\n\n" --end now --start end-367d \
     $RRD_OPTS_FUZZY > /dev/null
 fi
 
