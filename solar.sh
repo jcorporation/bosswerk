@@ -67,7 +67,7 @@ then
 fi
 
 # try to fetch the data from pv
-STATUS="FAIL"
+STATUS="NOT REACHABLE"
 for TRY in {1..10}
 do
   echo "Fetching data from inverter $PV_URI (#$TRY)"
@@ -76,13 +76,14 @@ do
     WATT=$(grep webdata_now_p <<< "$OUT" | cut -d\" -f2)
     if [ -n "$WATT" ]
     then
+      STATUS="OK"
       # write the json data
       printf "{\n" > "$JSON_FILE"
       sed -E 's/var (webdata_.+) = "(.*)";/\t"\1": "\2",/' <<< "$OUT" >> "$JSON_FILE"
+      printf "\t\"status\": \"%s\",\n" "$STATUS" >> "$JSON_FILE"
       printf "\t\"last_refresh\": %s\n}\n" "$(date +%s)" >> "$JSON_FILE"
       # update the rrd
       rrdtool update "$RRD_FILE" "N:$WATT"
-      STATUS="OK"
       break
     fi
   fi
@@ -91,9 +92,12 @@ do
   sleep "$RETRY"
 done
 
-if [ "$STATUS" = "FAIL" ]
+if [ "$STATUS" != "OK" ]
 then
   echo "Error fetching data from inverter"
+  printf "{\n" > "$JSON_FILE"
+  printf "\t\"status\": \"%s\",\n" "$STATUS" >> "$JSON_FILE"
+  printf "\t\"last_refresh\": %s\n}\n" "$(date +%s)" >> "$JSON_FILE"
   exit 1
 fi
 

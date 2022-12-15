@@ -20,10 +20,19 @@ function parseData(data) {
     last_refresh = data.last_refresh;
     var date = new Date(data.last_refresh * 1000);
     document.getElementById('last_refresh').textContent = date.toLocaleString();
-    document.getElementById('webdata_now_p').textContent = data.webdata_now_p + 'W';
-    document.getElementById('webdata_today_e').textContent = data.webdata_today_e + 'kWh';
-    document.getElementById('webdata_total_e').textContent = data.webdata_total_e + 'kWh';
-    document.title = 'Solar: ' + data.webdata_now_p + 'W';
+    document.getElementById('status').textContent = data.status;
+    if (data.webdata_now_p !== undefined) {
+        document.getElementById('webdata_now_p').textContent = data.webdata_now_p + 'W';
+        document.getElementById('webdata_today_e').textContent = data.webdata_today_e + 'kWh';
+        document.getElementById('webdata_total_e').textContent = data.webdata_total_e + 'kWh';
+        document.title = 'Solar: ' + data.webdata_now_p + 'W';
+    }
+    else {
+        document.getElementById('webdata_now_p').textContent = 'na';
+        document.getElementById('webdata_today_e').textContent = 'na';
+        document.getElementById('webdata_total_e').textContent = 'na';
+        document.title = 'Solar';
+    }
     for (const img of imgs) {
         img.src = img.getAttribute('data-src') + '?' + last_refresh;
     }
